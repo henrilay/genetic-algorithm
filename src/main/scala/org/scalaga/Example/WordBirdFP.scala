@@ -91,29 +91,21 @@ object Selection {
     override def selection(eliteSize: Int, scores: List[(Double, Word)]): List[Word] = {
       import scala.util.Random
 
-      //add lucky loosers to the selection (roulette wheel)
-      val loosers = scores.drop(eliteSize)
-      val sumFitness: Double = loosers.map(_._1).sum
+      //add lucky losers to the selection (roulette wheel)
+      val losers = scores.drop(eliteSize)
+      val sumFitness: Double = losers.map(_._1).sum
+
       if (sumFitness == 0.0) {
         scores.map(_._2)
       } else {
         lazy val remainingPopulation = scores.size - eliteSize
-        lazy val probFitness: List[(Double, Int)] = loosers.map(_._1 / sumFitness).zipWithIndex
+        lazy val probFitness: List[(Double, Int)] = losers.map(_._1 / sumFitness).zipWithIndex
+        lazy val probMax = probFitness.max._1
 
         val selected = List.fill(remainingPopulation) {
-          import scala.annotation.tailrec
-
-          @tailrec def pickLuckyLooser(maybeLuckyLooser: Option[Word]): Word = {
-            if (maybeLuckyLooser.nonEmpty) {
-              maybeLuckyLooser.get
-            } else {
-              val pick = 100 * Random.nextDouble
-              val found = Random.shuffle(probFitness) collectFirst { case (prob, index) if pick <= prob => loosers(index)._2 }
-              pickLuckyLooser(found)
-            }
-          }
-
-          pickLuckyLooser(None)
+          val pick = Random.nextDouble * probMax
+          val maybeLuckyLooser = Random.shuffle(probFitness) find { case (prob, _) => pick <= prob }
+          losers(maybeLuckyLooser.fold(Random.nextInt(losers.size))(_._2))._2
         }
 
         scores.take(eliteSize).map(_._2) ++ selected

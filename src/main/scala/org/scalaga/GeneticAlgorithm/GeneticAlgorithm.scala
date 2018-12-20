@@ -45,18 +45,19 @@ trait GeneticAlgorithm[T <: Gene] {
     val selected: ListBuffer[(Double, Chromosome[T])] = ListBuffer.empty[(Double, Chromosome[T])]
 
     //add lucky loosers to the selection (roulette wheel)
-    val loosers = rankedPopulation.drop(eliteSize)
-    val sumFitness: Double = loosers.map(_._1).sum
+    val losers = rankedPopulation.drop(eliteSize)
+    val sumFitness: Double = losers.map(_._1).sum
     if (sumFitness == 0.0) {
       rankedPopulation
     } else {
       lazy val remainingPopulation = rankedPopulation.size - eliteSize
-      lazy val probFitness: List[(Double, Int)] = loosers.map(_._1 / sumFitness).zipWithIndex
+      lazy val probFitness: List[(Double, Int)] = losers.map(_._1 / sumFitness).zipWithIndex
+      lazy val probMax = probFitness.max._1
 
       for (i <- 0 to remainingPopulation if i < remainingPopulation) {
-        val pick = 100 * Random.nextDouble
-        val maybeLuckyLooser = Random.shuffle(probFitness) find { case (prob, _) => pick <= prob }
-        maybeLuckyLooser.fold() { case (_, index) => selected += loosers(index) }
+        val pick = Random.nextDouble * probMax
+        val maybeLuckyLooser = Random.shuffle(probFitness).find { case (prob, _) => pick <= prob }
+        selected += losers(maybeLuckyLooser.fold(Random.nextInt(losers.size))(_._2))
       }
 
       //add elite

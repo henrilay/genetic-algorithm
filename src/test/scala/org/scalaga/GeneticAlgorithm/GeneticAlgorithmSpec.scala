@@ -99,18 +99,18 @@ class GeneticAlgorithmSpec extends WordSpec with MustMatchers {
     "keep Elite" when {
       "elite size is zero" in {
         val popu = TestGA.initialPopulation(genesPool, 20, 4)
-        TestGA.keepElite(popu.toList, 0) must ===(Set.empty[Chromosome[Letter]])
+        TestGA.keepElite(popu, 0) must ===(List.empty[Chromosome[Letter]])
       }
 
       "elite size is greater than zero" in {
         val popu = TestGA.initialPopulation(genesPool, 20, 4)
-        TestGA.keepElite(popu.toList, 5).toList must ===(popu.take(5).toList)
+        TestGA.keepElite(popu, 5) must ===(popu.take(5))
       }
     }
 
     "generate children" in {
       val popu = TestGA.initialPopulation(genesPool, 20, 4)
-      TestGA.generateChildren(popu.toList, 15, _ => Letter.applyRandom).size mustBe 15
+      TestGA.generateChildren(popu, 15, _ => Letter.applyRandom).size mustBe 15
     }
 
     "correctly produce next generation" in {

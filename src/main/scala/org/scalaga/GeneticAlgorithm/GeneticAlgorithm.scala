@@ -25,17 +25,13 @@ trait GeneticAlgorithm[T <: Gene] {
     }
   }
 
-  def initialPopulation(genes: List[T], popuSize: Int = 100, chromosomeSize: Int = Chromosome.MAX_NUMBER_OF_GENE): Set[Chromosome[T]] = {
-    import scala.collection.mutable.ListBuffer
-
-    val population: ListBuffer[Chromosome[T]] = ListBuffer.empty[Chromosome[T]]
-    for (i <- 0 to popuSize if i < popuSize) population += Chromosome(genes, chromosomeSize)
-    population.toSet
+  def initialPopulation(genes: List[T], popuSize: Int = 100, chromosomeSize: Int = Chromosome.MAX_NUMBER_OF_GENE): List[Chromosome[T]] = {
+    List.fill(popuSize)(Chromosome(genes, chromosomeSize))
   }
 
   def fitness(chromosome: Chromosome[T]): Double = ???
 
-  def evaluatePopulation(population: Set[Chromosome[T]]): List[(Double, Chromosome[T])] = {
+  def evaluatePopulation(population: List[Chromosome[T]]): List[(Double, Chromosome[T])] = {
     population.map(chromosome => fitness(chromosome) -> chromosome).toList.sorted
   }
 
@@ -68,10 +64,20 @@ trait GeneticAlgorithm[T <: Gene] {
   }
 
   def orderedCrossover(parent1: Chromosome[T], parent2: Chromosome[T]): Chromosome[T] = {
-    val crossovers = List.fill(20, 2)(Random.nextInt(parent1.genes.size))
-    val validCrossoverPoint = crossovers.maxBy(_.toSet.size)
-    val startGene = validCrossoverPoint.min
-    val endGene = validCrossoverPoint.max
+    val (startGene, endGene): (Int, Int) = {
+      import scala.util.Random
+      import scala.annotation.tailrec
+
+      @tailrec def getTupleIndex(index1: Int, index2: Int): (Int, Int) = {
+        if (index1 != index2) {
+          if (index1 < index2) (index1, index2) else (index2, index1)
+        } else {
+          getTupleIndex(Random.nextInt(parent1.genes.size), Random.nextInt(parent1.genes.size))
+        }
+      }
+
+      getTupleIndex(Random.nextInt(parent1.genes.size), Random.nextInt(parent1.genes.size))
+    }
 
     val childP1 = parent1.genes.slice(startGene, endGene)
     val childGenes = parent2.genes.slice(0, startGene) ++ childP1 ++ parent2.genes.slice(endGene, parent2.genes.size)
@@ -91,32 +97,21 @@ trait GeneticAlgorithm[T <: Gene] {
     Chromosome(newGenes)
   }
 
-  def keepElite(selectedPopulation: List[Chromosome[T]], eliteSize: Int = 0): Set[Chromosome[T]] = {
-    selectedPopulation.take(eliteSize).toSet
+  def keepElite(selectedPopulation: List[Chromosome[T]], eliteSize: Int = 0): List[Chromosome[T]] = {
+    selectedPopulation.take(eliteSize)
   }
 
-  def generateChildren(selectedPopulation: List[Chromosome[T]], maxChildren: Int, applyGene: Unit => T, mutationRate: Double = 0.01): Set[Chromosome[T]] = {
-    import scala.collection.mutable.Set
+  def generateChildren(selectedPopulation: List[Chromosome[T]], maxChildren: Int, applyGene: Unit => T, mutationRate: Double = 0.01): List[Chromosome[T]] = {
 
-    val children: Set[Chromosome[T]] = Set.empty[Chromosome[T]]
     val matingPool = Random.shuffle(selectedPopulation).toArray
-    for (i <- 0 to maxChildren if i < maxChildren) {
-      children += mutate(orderedCrossover(matingPool(i), matingPool(selectedPopulation.size - i - 1)), applyGene, mutationRate)
-    }
-
-    children.toSet
+    List.tabulate(maxChildren)(i => mutate(orderedCrossover(matingPool(i), matingPool(selectedPopulation.size - i - 1)), applyGene, mutationRate))
   }
 
-  def nextGeneration(population: Set[Chromosome[T]], applyGene: Unit => T, eliteSize: Int = 0, mutationRate: Double = 0.01): Set[Chromosome[T]] = {
-    import scala.collection.mutable.Set
-
-    val nextGen: Set[Chromosome[T]] = Set.empty[Chromosome[T]]
-
+  def nextGeneration(population: List[Chromosome[T]], applyGene: Unit => T, eliteSize: Int = 0, mutationRate: Double = 0.01): List[Chromosome[T]] = {
     //evaluate and select population
     val selectedPopulation = selection(evaluatePopulation(population), eliteSize).map(_._2)
 
     //retain elite for next generation
-    nextGen ++ keepElite(selectedPopulation, eliteSize) ++ generateChildren(selectedPopulation, selectedPopulation.size - eliteSize, applyGene, mutationRate)
-    nextGen.toSet
+    keepElite(selectedPopulation, eliteSize) ++ generateChildren(selectedPopulation, selectedPopulation.size - eliteSize, applyGene, mutationRate)
   }
 }

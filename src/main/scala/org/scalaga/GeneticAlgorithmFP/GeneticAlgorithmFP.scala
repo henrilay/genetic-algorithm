@@ -1,4 +1,4 @@
-package GeneticAlgorithmFP
+package org.scalaga.GeneticAlgorithmFP
 
 trait GeneDSL[A] {
   def mutate(gene: A): A

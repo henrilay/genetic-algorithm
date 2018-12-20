@@ -1,6 +1,6 @@
-package Example
+package org.scalaga.Example
 
-import GeneticAlgorithmFP._
+import org.scalaga.GeneticAlgorithmFP._
 
 //models
 case class Letter(c: Char)

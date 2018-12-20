@@ -1,4 +1,4 @@
-package GeneticAlgorithm
+package org.scalaga.GeneticAlgorithm
 
 import scala.util.Random
 
